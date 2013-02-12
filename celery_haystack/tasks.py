@@ -84,8 +84,13 @@ class CeleryHaystackSignalHandler(Task):
             if legacy:
                 index_holder = site
             else:
-                backend_alias = connection_router.for_write(**{'models': [model_class]})
-                index_holder = connections[backend_alias].get_unified_index()  # noqa
+                backend_aliases = connection_router.for_write(**{'models': [model_class]})
+                for backend_alias in backend_aliases:
+                    index_holder = connections[backend_alias].get_unified_index()  # noqa
+                    try:
+                        return index_holder.get_index(model_class)
+                    except NotHandled:
+                        pass
             return index_holder.get_index(model_class)
         except IndexNotFoundException:
             raise ImproperlyConfigured("Couldn't find a SearchIndex for %s." %
